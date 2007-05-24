@@ -1,9 +1,9 @@
-# $Id: Build.PL,v 1.13 2007/05/19 13:02:43 ask Exp $
-# $Source: /opt/CVS/Modwheel/Build.PL,v $
+# $Id: Build.PL,v 1.1.1.1 2007/05/23 22:07:09 ask Exp $
+# $Source: /opt/CVS/classpluginutil/Build.PL,v $
 # $Author: ask $
 # $HeadURL$
-# $Revision: 1.13 $
-# $Date: 2007/05/19 13:02:43 $
+# $Revision: 1.1.1.1 $
+# $Date: 2007/05/23 22:07:09 $
 use strict;
 use warnings;
 use Module::Build;

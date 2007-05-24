@@ -19,5 +19,6 @@ t/00-YAML-META_valid.t
 t/00.load.t
 t/13-Class-Plugin-Util.t
 t/perlcritic.t
+t/perlcriticrc
 t/pod-coverage.t
 t/pod.t

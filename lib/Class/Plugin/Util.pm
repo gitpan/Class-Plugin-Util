@@ -1,16 +1,14 @@
-# $Id: RCS.stub,v 1.1 2007/04/23 19:28:42 ask Exp $
-# $Source: /opt/CVS/Modwheel/devel/RCS.stub,v $
+# $Id: Util.pm,v 1.4 2007/05/24 19:03:26 ask Exp $
+# $Source: /opt/CVS/classpluginutil/lib/Class/Plugin/Util.pm,v $
 # $Author: ask $
 # $HeadURL$
-# $Revision: 1.1 $
-# $Date: 2007/04/23 19:28:42 $
+# $Revision: 1.4 $
+# $Date: 2007/05/24 19:03:26 $
 package Class::Plugin::Util;
 use strict;
 use warnings;
-use Carp;
 use UNIVERSAL::require;
-use Params::Util qw(_CLASS);
-our $VERSION = 0.003;
+our $VERSION = 0.004;
 {
 
 
@@ -35,20 +33,21 @@ our $VERSION = 0.003;
     # We don't wanna load in all the excess code of Exporter.
     #------------------------------------------------------------------------
     sub import {
-        my ($package, @export_attrs) = @_;
-        return if not scalar @export_attrs;
-
-        no strict 'refs'; ## no critic
-
+        shift; ### delete package name from @_.
         my $caller = caller;
-        for my $export_attr (@export_attrs) {
+        
+        no strict 'refs'; ## no critic
+        while (@_) {
+            my $export_attr = shift @_;
+            my $sub         = $EXPORT{$export_attr};
 
-            my $sub = $EXPORT{$export_attr};
+            if (not $sub) {
+                require Carp;
+                Carp->import('croak');
+                croak("Class::Plugin::Util does not export '$export_attr'");
+            }
 
-            croak "$package does not export '$export_attr'"
-                if not $sub;
-
-                *{ $caller . q{::} . $export_attr } = $sub;
+            *{ $caller . q{::} . $export_attr } = $sub;
         }
 
         return;
@@ -130,6 +129,16 @@ our $VERSION = 0.003;
         return $class->new(@_);
     }
 
+    #------------------------------------------------------------------------
+    # ->_CLASS( $class_name )
+    #
+    # Copied and pasted from Params::Util.
+    # Thanks to Adam Kennedy <adamk@cpan.org>
+    #------------------------------------------------------------------------
+    sub _CLASS { ## no critic
+        (defined $_[0] and ! ref $_[0] and $_[0] =~ m/^[^\W\d]\w*(?:::\w+)*$/s) ? $_[0] : undef; ## no critic;
+    } ## no critic
+
 }
 
 1; # keep require happy.
@@ -145,7 +154,7 @@ Class::Plugin::Util - Utility functions for supporting Plug-ins.
 
 =head1 VERSION
 
-This document describes Class::Plugin::Util version 0.003;
+This document describes Class::Plugin::Util version 0.004;
 
 =head1 SYNOPSIS
 
@@ -397,8 +406,6 @@ This module requires no configuration file or environment variables.
 =over 4
 
 =item * L<UNIVERSAL::require>
-
-=item * L<Params::Util>
 
 =back
 

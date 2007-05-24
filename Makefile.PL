@@ -11,7 +11,6 @@ WriteMakefile(
     PREREQ_PM => {
         'Test::More' => 0,
         'UNIVERSAL::require'    => 0.10,
-        'Params::Util'          => 0.22,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Class-Plugin-Util-*' },

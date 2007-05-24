@@ -1,9 +1,9 @@
-# $Id: config.ph,v 1.3 2007/05/21 21:18:33 ask Exp $
-# $Source: /opt/CVS/Modwheel/config.ph,v $
+# $Id: config.ph,v 1.2 2007/05/24 19:01:57 ask Exp $
+# $Source: /opt/CVS/classpluginutil/config.ph,v $
 # $Author: ask $
 # $HeadURL$
-# $Revision: 1.3 $
-# $Date: 2007/05/21 21:18:33 $
+# $Revision: 1.2 $
+# $Date: 2007/05/24 19:01:57 $
 module_name          => 'Class::Plugin::Util',
 license              => 'perl',
 dist_author          => 'Ask Solem <ASKSH@cpan.org>',
@@ -12,7 +12,6 @@ dynamic_config       => NO,
 sign                 => NO, # asksh: have to find out why my signature fails.
 recursive_test_files => YES,
 requires             => {
-    'Params::Util'          => 0.22,    # bugfix for _CODELIKE
     'UNIVERSAL::require'    => 0.10,    # 0.10 fixes a security issue.
 },
 recommends           => {
