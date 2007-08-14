@@ -1,5 +1,8 @@
 Revision history for Class-Plugin-Util
 
+0.006  Sat Aug 11 08:12:13 PM 2007 [asksh@cpan.org]
+    -  Some debugging printing was left in the code. Now removed.
+
 0.005  Sat Aug 11 11:50:00 AM 2007 [asksh@cpan.org]
     -  VERSION BUMP 0.005 Impact: None.
     -  TESTS: Test::Kwalitee, Test::Pod::Coverage, Test::Pod and

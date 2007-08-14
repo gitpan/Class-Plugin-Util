@@ -13,6 +13,7 @@ LICENSE
 Makefile.PL
 MANIFEST			This list of files
 META.yml
+nice.pl
 README
 t/00-Kwalitee.t
 t/00-YAML-META_valid.t

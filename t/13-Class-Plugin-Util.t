@@ -3,12 +3,29 @@ use strict;
 use warnings;
 use English qw( -no_match_vars );
 
+BEGIN {
+    use FindBin qw($Bin);
+    use lib "$Bin";
+}
+
 our $THIS_TEST_HAS_TESTS = 10;
+
 
 use Test::More;
 eval 'require Module::Mask';
 if ($EVAL_ERROR) {
     plan( skip_all => 'These tests requires Module::Mask' );
+}
+
+eval 'use IO::Capture::Stderr';
+my $has_capture = !$EVAL_ERROR;
+if ($has_capture) {
+    require IO::Capture::Stderr;
+    my $cserr = IO::Capture::Stderr->new( );
+    $cserr->start( );
+}
+else {
+    plan skip_all => 'This test requires IO::Capture::Stderr';
 }
 
 

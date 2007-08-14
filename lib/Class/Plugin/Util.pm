@@ -8,7 +8,7 @@ package Class::Plugin::Util;
 use strict;
 use warnings;
 use warnings::register;
-our $VERSION = 0.005;
+our $VERSION = 0.006;
 use 5.008001;
 {
     use English qw( -no_match_vars );
@@ -219,7 +219,6 @@ use 5.008001;
             # It's also loaded if we find a function in that class.
             METHOD:
             for my $namespace_entry (keys %{"${class}::"}) {
-                print "$class :: $namespace_entry", "\n";
                 if (substr($namespace_entry, -2, 2) eq $CLASS_SEPARATOR) {
                     # It's a subclass, so skip it.
                     next METHOD;
@@ -241,7 +240,6 @@ use 5.008001;
         # Load the module if it's not already loaded.
         if (!$INC{$class_filename}) {
             my ($call_pkg, $call_file, $call_line) = (caller $CALL_LEVEL)[0..2];
-            print "CALL PACKAGE: $call_pkg\n";
             my $require_codetext = qq{
                 #line $call_line "$call_file"
                 CORE::require(\$class_filename)
@@ -298,7 +296,7 @@ Class::Plugin::Util - Utility functions for supporting Plug-ins.
 
 =head1 VERSION
 
-This document describes Class::Plugin::Util version 0.005;
+This document describes Class::Plugin::Util version 0.006;
 
 =head1 SYNOPSIS
 
