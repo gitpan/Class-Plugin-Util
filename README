@@ -1,4 +1,4 @@
-Class-Plugin-Util version 0.0.1
+Class-Plugin-Util version 0.0.5
 
 This module has utility functions for creating dynamic classes.
 
@@ -15,12 +15,7 @@ To install this module, run the following commands:
 
 DEPENDENCIES
 
-UNIVERSAL::require
-    -> http://search.cpan.org/CPAN/authors/id/M/MS/MSCHWERN/UNIVERSAL-require-0.11.tar.gz
-
-Params::Util
-    -> http://search.cpan.org/~adamk/Params-Util-0.25/
-
+None.
 
 COPYRIGHT AND LICENCE
 

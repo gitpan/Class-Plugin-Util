@@ -1,16 +1,17 @@
-# $Id: Util.pm,v 1.4 2007/05/24 19:03:26 ask Exp $
+# $Id: Util.pm,v 1.5 2007/07/11 23:54:29 ask Exp $
 # $Source: /opt/CVS/classpluginutil/lib/Class/Plugin/Util.pm,v $
 # $Author: ask $
 # $HeadURL$
-# $Revision: 1.4 $
-# $Date: 2007/05/24 19:03:26 $
+# $Revision: 1.5 $
+# $Date: 2007/07/11 23:54:29 $
 package Class::Plugin::Util;
 use strict;
 use warnings;
-use UNIVERSAL::require;
-our $VERSION = 0.004;
+use warnings::register;
+our $VERSION = 0.005;
+use 5.008001;
 {
-
+    use English qw( -no_match_vars );
 
     # List of subs to export.
     my %EXPORT = (
@@ -20,11 +21,18 @@ our $VERSION = 0.004;
         first_available_new     => \&first_available_new,
     );
 
+    my $CALL_LEVEL       = 1;
+
+    my $CLASS_SEPARATOR  = q{::};
+
     # Cache of modules already tested.
     my %probe_cache      = ( );
 
     # Cache of modules that we know doesn't exist.
     my %probe_fail_cache = ( );
+
+    # Cache of class names to file names.
+    my %class_to_filename_cache = ( );
 
     #------------------------------------------------------------------------
     # ::import
@@ -39,15 +47,18 @@ our $VERSION = 0.004;
         no strict 'refs'; ## no critic
         while (@_) {
             my $export_attr = shift @_;
-            my $sub         = $EXPORT{$export_attr};
+            my $sub_coderef = $EXPORT{$export_attr};
 
-            if (not $sub) {
+            if (not $sub_coderef) {
                 require Carp;
                 Carp->import('croak');
+
+                ## no critic;
                 croak("Class::Plugin::Util does not export '$export_attr'");
             }
 
-            *{ $caller . q{::} . $export_attr } = $sub;
+            my $new_package_address   = join q{::}, ($caller, $export_attr);
+            *{ $new_package_address } = $sub_coderef;
         }
 
         return;
@@ -75,7 +86,7 @@ our $VERSION = 0.004;
         PROBE:
         for my $required_module (@modules) {
             if (! exists $probe_cache{$required_module}) {
-                if (! $required_module->require) {
+                if (! _require_class($required_module)) {
                     return $required_module;
                 }
             }
@@ -99,16 +110,16 @@ our $VERSION = 0.004;
         for my $class (@{ $classes_to_try_ref }) {
             next CLASS if exists $probe_fail_cache{$class};
             next CLASS if ! _CLASS($class);
-            next CLASS if ! $class->require;
+            next CLASS if ! _require_class($class);
 
-            my $obj = $class->new( @_ );
+            my $try_this_object = $class->new( @_ );
 
-            if (! $obj) {
+            if (! $try_this_object) {
                 $probe_fail_cache{$class} = 1;
                 next CLASS;
             }
 
-            return $obj;
+            return $try_this_object;
         }
 
         return;
@@ -123,10 +134,142 @@ our $VERSION = 0.004;
     #------------------------------------------------------------------------
     sub factory_new {
         my $class = shift;
-
-        $class->require;
+        
+        _require_class($class) or return;
 
         return $class->new(@_);
+    }
+
+    #------------------------------------------------------------------------
+    # ->_require_class($class, $opt_import)
+    #
+    # Load module dynamicly by class name.
+    # Does not die on error. (like missing file).
+    # 
+    # If $opt_import is set, _require_class will behave as new and will
+    # import the module into the callers namespace. (@opt_imports specifies
+    # what to import).
+    #
+    # Some examples:
+    #
+    #   Regular require:
+    #
+    #           _require_class('Carp::Clan');
+    #
+    #       behaves like:
+    #           require Carp::Clan;
+    #
+    #   Require + Import (without specified imports).
+    #
+    #           _require_class('Carp::Clan', {import => 1});
+    #
+    #       behaves like:
+    #           require Carp::Clan;
+    #           Carp::Clan->import();
+    #
+    #
+    #   Require + Import (with specified imports).
+    #
+    #           _require_class('Carp::Clan', {
+    #               import => [qw(carp croak confess)]
+    #           });
+    #
+    #       behaves like:
+    #           require Carp::Clan;
+    #           Carp::Clan->import('crap', 'croak', 'confess');
+    #
+    #   Use
+    #
+    #           BEGIN { _require_class('Carp::Clan', {import => 1} };
+    #       
+    #       behaves like:
+    #           use Carp::Clan;
+    #
+    #       and:
+    #
+    #           BEGIN {
+    #               _require_class('Carp::Clan', {
+    #                   import => [ qw(cluck confess) ]
+    #               });
+    #           }
+    #
+    #        behaves like:
+    #            use Carp::Clan qw(cluck confess);
+    # 
+    #------------------------------------------------------------------------
+    sub _require_class {
+        my ($class, $options_ref) =  @_;
+        $options_ref            ||= {  };
+
+        # Must be valid Perl class name.
+        if (! _CLASS($class)) {
+            require Carp;
+            Carp->import('croak');
+            ## no critic
+            croak("$class is not a valid class name.");
+        }
+
+        NOSTRICT: {
+            no strict 'refs'; ## no critic;
+
+            # It's already loaded if $VERSION or @ISA is defined in the class.
+            return 1 if defined ${"${class}::VERSION"};
+            return 1 if defined @{"${class}::ISA"};
+
+            # It's also loaded if we find a function in that class.
+            METHOD:
+            for my $namespace_entry (keys %{"${class}::"}) {
+                print "$class :: $namespace_entry", "\n";
+                if (substr($namespace_entry, -2, 2) eq $CLASS_SEPARATOR) {
+                    # It's a subclass, so skip it.
+                    next METHOD;
+                }
+                return 1 if defined &{"${class}::$namespace_entry"};
+            }
+        }
+
+        # Convert class to filename (Cached).
+        # (Does not have to be cross-platform compatible paths
+        #  as perl takes care of this in the background). 
+        my $class_filename = $class_to_filename_cache{$class};
+        if (! defined $class_filename) {
+            $class_filename =  $class . q{.pm};
+            $class_filename =~ s{::}{/}xmsg;
+            $class_to_filename_cache{$class} = $class_filename;
+        }
+
+        # Load the module if it's not already loaded.
+        if (!$INC{$class_filename}) {
+            my ($call_pkg, $call_file, $call_line) = (caller $CALL_LEVEL)[0..2];
+            print "CALL PACKAGE: $call_pkg\n";
+            my $require_codetext = qq{
+                #line $call_line "$call_file"
+                CORE::require(\$class_filename)
+            };
+            if ($options_ref->{'import'}) {
+                my @imports;
+                if (ref $options_ref->{'import'} eq 'HASH') {
+                    @imports = @{ $options_ref->{'import'} };
+                }
+                $require_codetext .= qq{
+                    package $call_pkg;
+                    \$module->import(\@opt_imports);
+                };
+            }
+            $require_codetext =~ s/^\s+//xmsg;
+            eval $require_codetext; ## no critic
+
+            if ($EVAL_ERROR) {
+                my $error_msg = $EVAL_ERROR;
+                if (warnings::enabled) { ## no critic
+                    warnings::warn(__PACKAGE__, "load class: $error_msg"); ## no critic
+                }
+                return;
+            }
+
+        }
+
+        return 1;
     }
 
     #------------------------------------------------------------------------
@@ -136,7 +279,8 @@ our $VERSION = 0.004;
     # Thanks to Adam Kennedy <adamk@cpan.org>
     #------------------------------------------------------------------------
     sub _CLASS { ## no critic
-        (defined $_[0] and ! ref $_[0] and $_[0] =~ m/^[^\W\d]\w*(?:::\w+)*$/s) ? $_[0] : undef; ## no critic;
+        (defined $_[0] and ! ref $_[0] and $_[0]
+            =~ m/^[^\W\d]\w*(?:::\w+)*$/s) ? $_[0] : undef; ## no critic;
     } ## no critic
 
 }
@@ -154,7 +298,7 @@ Class::Plugin::Util - Utility functions for supporting Plug-ins.
 
 =head1 VERSION
 
-This document describes Class::Plugin::Util version 0.004;
+This document describes Class::Plugin::Util version 0.005;
 
 =head1 SYNOPSIS
 
@@ -464,5 +608,9 @@ POSSIBILITY OF SUCH DAMAGES.
 
 =cut
 
-# Local variables:
-# vim: ts=4
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 78
+# End:
+# vim: expandtab tabstop=4 shiftwidth=4 shiftround

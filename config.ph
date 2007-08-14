@@ -12,17 +12,8 @@ dynamic_config       => NO,
 sign                 => NO, # asksh: have to find out why my signature fails.
 recursive_test_files => YES,
 requires             => {
-    'UNIVERSAL::require'    => 0.10,    # 0.10 fixes a security issue.
 },
 recommends           => {
-    'Test::Pod'             => 1.22,    # Last significant bug-change.
-    'Pod::Coverage'         => 0.18,       
-    'Test::Pod::Coverage'   => 1.08,    # Last significant bug-change.
-    'Test::Exception'       => 0.25,
-    'Perl::Critic'          => 1.051,
-    'Test::Perl::Critic'    => 1.0,
-    'Test::YAML::Meta'      => 0.04,
-    'Test::Kwalitee'        => 0.30,
 },
 build_requires       => {
     'Test::Simple'            => 0.42,    # 
