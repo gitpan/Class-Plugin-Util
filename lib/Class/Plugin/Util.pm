@@ -8,7 +8,7 @@ package Class::Plugin::Util;
 use strict;
 use warnings;
 use warnings::register;
-our $VERSION = 0.006;
+our $VERSION = 0.007;
 use 5.008001;
 {
     use English qw( -no_match_vars );
@@ -19,6 +19,7 @@ use 5.008001;
         doesnt_support          => \&doesnt_support,
         factory_new             => \&factory_new,
         first_available_new     => \&first_available_new,
+        require_class           => \&require_class,
     );
 
     my $CALL_LEVEL       = 1;
@@ -33,6 +34,12 @@ use 5.008001;
 
     # Cache of class names to file names.
     my %class_to_filename_cache = ( );
+
+    # To be backward compatible with < 1.0
+    BEGIN { ## no critic
+        *Class::Plugin::Util::_require_class
+            = \&Class::Plugin::Util::require_class;
+    }
 
     #------------------------------------------------------------------------
     # ::import
@@ -86,7 +93,7 @@ use 5.008001;
         PROBE:
         for my $required_module (@modules) {
             if (! exists $probe_cache{$required_module}) {
-                if (! _require_class($required_module)) {
+                if (! require_class($required_module)) {
                     return $required_module;
                 }
             }
@@ -110,7 +117,7 @@ use 5.008001;
         for my $class (@{ $classes_to_try_ref }) {
             next CLASS if exists $probe_fail_cache{$class};
             next CLASS if ! _CLASS($class);
-            next CLASS if ! _require_class($class);
+            next CLASS if ! require_class($class);
 
             my $try_this_object = $class->new( @_ );
 
@@ -135,69 +142,23 @@ use 5.008001;
     sub factory_new {
         my $class = shift;
         
-        _require_class($class) or return;
+        require_class($class) or return;
 
         return $class->new(@_);
     }
 
     #------------------------------------------------------------------------
-    # ->_require_class($class, $opt_import)
+    # ->require_class($class, $opt_import)
     #
     # Load module dynamicly by class name.
     # Does not die on error. (like missing file).
     # 
-    # If $opt_import is set, _require_class will behave as new and will
+    # If $opt_import is set, require_class will behave as new and will
     # import the module into the callers namespace. (@opt_imports specifies
     # what to import).
     #
-    # Some examples:
-    #
-    #   Regular require:
-    #
-    #           _require_class('Carp::Clan');
-    #
-    #       behaves like:
-    #           require Carp::Clan;
-    #
-    #   Require + Import (without specified imports).
-    #
-    #           _require_class('Carp::Clan', {import => 1});
-    #
-    #       behaves like:
-    #           require Carp::Clan;
-    #           Carp::Clan->import();
-    #
-    #
-    #   Require + Import (with specified imports).
-    #
-    #           _require_class('Carp::Clan', {
-    #               import => [qw(carp croak confess)]
-    #           });
-    #
-    #       behaves like:
-    #           require Carp::Clan;
-    #           Carp::Clan->import('crap', 'croak', 'confess');
-    #
-    #   Use
-    #
-    #           BEGIN { _require_class('Carp::Clan', {import => 1} };
-    #       
-    #       behaves like:
-    #           use Carp::Clan;
-    #
-    #       and:
-    #
-    #           BEGIN {
-    #               _require_class('Carp::Clan', {
-    #                   import => [ qw(cluck confess) ]
-    #               });
-    #           }
-    #
-    #        behaves like:
-    #            use Carp::Clan qw(cluck confess);
-    # 
     #------------------------------------------------------------------------
-    sub _require_class {
+    sub require_class {
         my ($class, $options_ref) =  @_;
         $options_ref            ||= {  };
 
@@ -296,7 +257,7 @@ Class::Plugin::Util - Utility functions for supporting Plug-ins.
 
 =head1 VERSION
 
-This document describes Class::Plugin::Util version 0.006;
+This document describes Class::Plugin::Util version 0.007;
 
 =head1 SYNOPSIS
 
@@ -533,6 +494,73 @@ Given a class name, load the module (via UNIVERSAL::require) and return a new in
 
 Given a list of modules, pick the first module installed and return a new instance of it.
 If no modules are installed, it returns nothing.
+
+=head3 C<Class::Plugin::Util::require_class($class)>
+    
+Load module dynamicly by class name.
+Does not die on error. (like missing file).
+
+This function also uses elaborate ways to find out if the module is already
+loaded, so it doesn't have to load it again.
+
+If C<$opt_import> is set, C<require_class> will behave as C<use> and will
+import the module into the callers namespace. (c<@opt_imports> specifies
+what to import).
+
+Some examples:
+
+=over 4
+
+=item Regular require
+
+    require_class('Carp::Clan');
+
+behaves like:
+    
+    require Carp::Clan;
+
+=item Require + Import (without specified imports).
+
+    require_class('Carp::Clan', {import => 1});
+
+behaves like:
+
+    require Carp::Clan;
+    Carp::Clan->import();
+
+
+=item Require + Import (with specified imports).
+
+    require_class('Carp::Clan', {
+        import => [qw(carp croak confess)]
+    });
+
+behaves like:
+
+    require Carp::Clan;
+    Carp::Clan->import('crap', 'croak', 'confess');
+
+=item Use
+
+    BEGIN { require_class('Carp::Clan', {import => 1} };
+
+behaves like:
+
+    use Carp::Clan;
+
+and:
+
+    BEGIN {
+        require_class('Carp::Clan', {
+            import => [ qw(cluck confess) ]
+        });
+    }
+
+behaves like:
+
+    use Carp::Clan qw(cluck confess);
+
+=back
 
 =head1 DIAGNOSTICS
 

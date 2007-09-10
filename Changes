@@ -1,5 +1,10 @@
 Revision history for Class-Plugin-Util
 
+0.007  Mon Sep 10 12:10:43 AM 2007 [asksh@cpan.org]
+    -  Renamed _require_class to require_class (an alias is mantained for
+       backwards-compatability).
+    -  Now exports require_class.
+
 0.006  Sat Aug 11 08:12:13 PM 2007 [asksh@cpan.org]
     -  Some debugging printing was left in the code. Now removed.
 
@@ -26,3 +31,5 @@ Revision history for Class-Plugin-Util
 0.003  Wed May 23 17:06:25 PM 2007
        Initial release.
 
+
+# vim: expandtab tabstop=4 shiftwidth=4 shiftround

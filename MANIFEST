@@ -1,6 +1,9 @@
 Build.PL
 Changes
 config.ph
+devel/curversion
+devel/grepversion.sh
+devel/incrementversion.sh
 examples/first_available/MyApp/Export.pm
 examples/first_available/MyApp/Export/Base.pm
 examples/first_available/MyApp/Export/JSON/Syck.pm
@@ -13,7 +16,6 @@ LICENSE
 Makefile.PL
 MANIFEST			This list of files
 META.yml
-nice.pl
 README
 t/00-Kwalitee.t
 t/00-YAML-META_valid.t
