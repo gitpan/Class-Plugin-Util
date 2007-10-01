@@ -12,6 +12,7 @@ dynamic_config       => NO,
 sign                 => NO, # asksh: have to find out why my signature fails.
 recursive_test_files => YES,
 requires             => {
+    'Module::Find'      => 0.05,
 },
 recommends           => {
 },

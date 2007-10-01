@@ -8,10 +8,11 @@ package Class::Plugin::Util;
 use strict;
 use warnings;
 use warnings::register;
-our $VERSION = 0.007;
+our $VERSION = 0.008;
 use 5.008001;
 {
     use English qw( -no_match_vars );
+    use Module::Find;
 
     # List of subs to export.
     my %EXPORT = (
@@ -20,9 +21,11 @@ use 5.008001;
         factory_new             => \&factory_new,
         first_available_new     => \&first_available_new,
         require_class           => \&require_class,
+        load_plugins            => \&load_plugins,
+        get_plugins             => \&get_plugins,
     );
 
-    my $CALL_LEVEL       = 1;
+    my $CALL_LEVEL       = 0;
 
     my $CLASS_SEPARATOR  = q{::};
 
@@ -34,6 +37,8 @@ use 5.008001;
 
     # Cache of class names to file names.
     my %class_to_filename_cache = ( );
+
+    my %plugins_for_superclass  = ( );
 
     # To be backward compatible with < 1.0
     BEGIN { ## no critic
@@ -69,6 +74,88 @@ use 5.008001;
         }
 
         return;
+    }
+
+    sub _ensure_hashref {
+        my ($orig_ref, $value) = @_;
+        return { } if not $orig_ref;
+        my %result;
+        $value ||= 1;
+
+        if (ref $orig_ref eq 'HASH') {
+            %result = %{ $orig_ref };
+        }
+        elsif (ref $orig_ref eq 'ARRAY') {
+            %result = map {$_ => $value} @{ $orig_ref };
+        }
+        else {
+            $result{$orig_ref} = $value;
+        }
+
+        return \%result;
+    }
+
+    #------------------------------------------------------------------------
+    # ::load_plugins( $superclass, @$opt_ignore_ref )
+    #
+    # Load all modules that is a subclass of superclass and that has
+    # a register_plugin method. The register plugin method should return
+    # a hashref like this:
+    #
+    #   return {
+    #       name    => 'plugin_name',
+    #       class   => __PACKAGE__, 
+    #       aliases => [ qw(Foo foo bar BAR) ],
+    #------------------------------------------------------------------------
+    sub load_plugins {
+        my ($superclass, $ignore_ref) = @_;
+        $superclass  ||= caller;
+        return 1 if $plugins_for_superclass{$superclass};
+
+        my @subclasses = Module::Find::findallmod($superclass);
+
+        $ignore_ref = _ensure_hashref($ignore_ref);
+
+        my %plugins;
+    
+        SUBCLASS:
+        for my $subclass (@subclasses) {
+            my $colcol_pos = rindex $subclass, q{::};
+            my $last_name  = $colcol_pos >= 0
+                ? substr $subclass, $colcol_pos + 2, length $subclass
+                : $subclass;
+            next SUBCLASS if $ignore_ref->{$last_name};
+            my $req_ret = require_class($subclass) ;
+            next SUBCLASS if not $req_ret;
+            next SUBCLASS if not $subclass->can('register_plugin');
+
+            my $plugin_info           = $subclass->register_plugin( );
+            $plugin_info            ||= { };
+            $plugin_info->{name}    ||= $last_name;
+            $plugin_info->{class}   ||= $subclass;
+
+            my $aliases             = $plugin_info->{aliases};
+            $aliases                = _ensure_hashref($aliases, $subclass);
+            $aliases->{$last_name}  = $subclass;
+
+            while (my ($alias, $target) = each %{ $aliases }) {
+                $plugins_for_superclass{$superclass}{$alias} = $target;
+            }
+            
+        };
+
+        #$plugins_for_superclass{$superclass} = \%plugins;
+       
+        return 1;
+    }
+
+    sub get_plugins {
+        my ($superclass) = @_;
+        $superclass ||= caller;
+
+        my $plugins = $plugins_for_superclass{$superclass};
+        return ref $plugins ? $plugins
+                            : { };
     }
 
     #------------------------------------------------------------------------
@@ -132,7 +219,6 @@ use 5.008001;
         return;
     }
 
-
     #------------------------------------------------------------------------
     # ->factory_new($class, @arguments_to_new)
     #
@@ -150,7 +236,7 @@ use 5.008001;
     #------------------------------------------------------------------------
     # ->require_class($class, $opt_import)
     #
-    # Load module dynamicly by class name.
+    # Load module by class name.
     # Does not die on error. (like missing file).
     # 
     # If $opt_import is set, require_class will behave as new and will
@@ -200,22 +286,25 @@ use 5.008001;
 
         # Load the module if it's not already loaded.
         if (!$INC{$class_filename}) {
-            my ($call_pkg, $call_file, $call_line) = (caller $CALL_LEVEL)[0..2];
-            my $require_codetext = qq{
+            my ($call_pkg, $call_file, $call_line) = caller $CALL_LEVEL;
+            
+            my $require_codetext = <<"ENDTEXT"
                 #line $call_line "$call_file"
                 CORE::require(\$class_filename)
-            };
+ENDTEXT
+;
             if ($options_ref->{'import'}) {
                 my @imports;
                 if (ref $options_ref->{'import'} eq 'HASH') {
                     @imports = @{ $options_ref->{'import'} };
                 }
-                $require_codetext .= qq{
+                $require_codetext .= <<"ENDTEXT"
                     package $call_pkg;
                     \$module->import(\@opt_imports);
-                };
+ENDTEXT
+;
             }
-            $require_codetext =~ s/^\s+//xmsg;
+            $require_codetext =~ s/\A\s+//xmsg;
             eval $require_codetext; ## no critic
 
             if ($EVAL_ERROR) {
@@ -250,6 +339,7 @@ __END__
 
 =pod
 
+=for stopwords YAML JSON CPAN Solem Gaal Yahas pre namespace
 
 =head1 NAME
 
@@ -257,7 +347,7 @@ Class::Plugin::Util - Utility functions for supporting Plug-ins.
 
 =head1 VERSION
 
-This document describes Class::Plugin::Util version 0.007;
+This document describes Class::Plugin::Util version 0.008;
 
 =head1 SYNOPSIS
 
@@ -269,7 +359,7 @@ This module has utility functions for creating dynamic classes.
 
 =head2 COOKBOOK
 
-=head3 Loading plugins.
+=head3 Loading plug-ins.
     
 If you have a class that has a method that returns a list of modules it requires you can
 check that everything is OK before you load it.
@@ -469,7 +559,7 @@ C<MyApp/Export/JSON/Syck.pm> - Example implementation of JSON::Syck support for 
 
 You want the user to be able to select which database type to use in a configuration file,
 have support for different database systems without listing all database modules (i.e DBD::mysql, DBD::pg etc)
-in your distributions prerequirements list, and you want to be able to add new database types with 
+in your distributions dependency list, and you want to be able to add new database types with 
 
 
 =head1 SUBROUTINES/METHODS
@@ -497,7 +587,7 @@ If no modules are installed, it returns nothing.
 
 =head3 C<Class::Plugin::Util::require_class($class)>
     
-Load module dynamicly by class name.
+Load module by class name.
 Does not die on error. (like missing file).
 
 This function also uses elaborate ways to find out if the module is already
@@ -561,6 +651,38 @@ behaves like:
     use Carp::Clan qw(cluck confess);
 
 =back
+
+=head3 C<load_plugins($superclass, [\%|\@|$ignore])>
+
+Find all subclass for a class that have a C<register_plugin> method.
+The C<register_plugin> method must return a hashref containing some info
+about the plugin, e.g:
+
+    return {
+        name    => 'MyPluginName',
+        class   => __PACKAGE__,
+        aliases => [qw(foo FOO bar BAR)],
+    }
+
+This method then returns a hash with information for all these classes.
+You can then get the list of plug-ins and their aliases by using
+C<get_plugins>:
+
+    load_plugins();
+
+    sub new {
+        my ($class, $wanted_type) = @_;
+
+        my $plugins_ref = get_plugins();
+        my $plugin = $plugins_ref->{$wanted_type};
+
+        return $plugin->new();
+    }
+    
+=head3 C<get_plugins($superclass)>
+
+Get a hashref with plugin aliases and the class they point to after
+a C<load_plugins()> call. See documentation for C<load_plugins> for more info.
 
 =head1 DIAGNOSTICS
 

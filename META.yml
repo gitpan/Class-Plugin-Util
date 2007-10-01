@@ -1,19 +1,21 @@
 ---
 name: Class-Plugin-Util
-version: 0.007
+version: 0.008
 author:
   - 'Ask Solem <ASKSH@cpan.org>'
 abstract: Utility functions for supporting Plug-ins.
 license: perl
 resources:
   license: http://dev.perl.org/licenses/
+requires:
+  Module::Find: 0.05
 build_requires:
   Test::Simple: 0.42
 dynamic_config: 0
 provides:
   Class::Plugin::Util:
     file: lib/Class/Plugin/Util.pm
-    version: 0.007
+    version: 0.008
 generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

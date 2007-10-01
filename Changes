@@ -1,5 +1,11 @@
 Revision history for Class-Plugin-Util
 
+0.008  Mon Oct 1  16:26:06 PM 2007 [asksh@cpan.org]
+    -  Added load_plugins and get_plugins functionality. (beta)
+       See documentation for more infomration.
+    -  Now depends on Module::Find v0.05.
+    -  Now passes the new perlcritic policies.
+
 0.007  Mon Sep 10 12:10:43 AM 2007 [asksh@cpan.org]
     -  Renamed _require_class to require_class (an alias is mantained for
        backwards-compatability).
