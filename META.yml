@@ -1,6 +1,6 @@
 ---
 name: Class-Plugin-Util
-version: 0.008
+version: 0.009
 author:
   - 'Ask Solem <ASKSH@cpan.org>'
 abstract: Utility functions for supporting Plug-ins.
@@ -15,7 +15,7 @@ dynamic_config: 0
 provides:
   Class::Plugin::Util:
     file: lib/Class/Plugin/Util.pm
-    version: 0.008
+    version: 0.009
 generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

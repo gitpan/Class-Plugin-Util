@@ -11,6 +11,7 @@ all_from             => 'lib/Class/Plugin/Util.pm',
 dynamic_config       => NO,
 sign                 => NO, # asksh: have to find out why my signature fails.
 recursive_test_files => YES,
+create_makefile_pl   => 'traditional',
 requires             => {
     'Module::Find'      => 0.05,
 },

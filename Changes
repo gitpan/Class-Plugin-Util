@@ -1,5 +1,9 @@
 Revision history for Class-Plugin-Util
 
+0.009  Mon Oct 2  18:18:18 PM 2007 [asksh@cpan.org]
+    -  Forgot to update Makefile.PL with the new dependency (Module::Find).
+       Now we use Module::Build's create_makefile_pl => 'traditional' instead.
+
 0.008  Mon Oct 1  16:26:06 PM 2007 [asksh@cpan.org]
     -  Added load_plugins and get_plugins functionality. (beta)
        See documentation for more infomration.

@@ -8,8 +8,8 @@ package Class::Plugin::Util;
 use strict;
 use warnings;
 use warnings::register;
-our $VERSION = 0.008;
-use 5.008001;
+our $VERSION = 0.009;
+use 5.006001;
 {
     use English qw( -no_match_vars );
     use Module::Find;
@@ -347,7 +347,7 @@ Class::Plugin::Util - Utility functions for supporting Plug-ins.
 
 =head1 VERSION
 
-This document describes Class::Plugin::Util version 0.008;
+This document describes Class::Plugin::Util version 0.009;
 
 =head1 SYNOPSIS
 
